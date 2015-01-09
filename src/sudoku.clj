@@ -1,58 +1,87 @@
 (ns sudoku
   (:require [clojure.set :as set]))
 
+(def all-values #{1 2 3 4 5 6 7 8 9})
+
 (def board identity)
 
 (defn value-at [board coord]
-  nil)
+  (get-in board coord))
 
 (defn has-value? [board coord]
-  nil)
+  (not= 0 (value-at board coord)))
 
-(defn row-values [board coord]
-  nil)
+(defn row-values [board [row _]]
+  (set (get board row)))
 
-(defn col-values [board coord]
-  nil)
+(defn col-values [board [_ col]]
+  (set (map #(get % col) board)))
 
 (defn coord-pairs [coords]
-  nil)
+  (for [row coords
+        col coords]
+    [row col]))
 
-(defn block-values [board coord]
-  nil)
+(defn block-values [board [row col]]
+  (let [rstart (* 3 (int (/ row 3)))
+        cstart (* 3 (int (/ col 3)))
+        pairs  (coord-pairs [0 1 2])]
+    (set (map #(get-in board %) 
+              (map (fn [[r c]] [(+ rstart r) (+ cstart c)]) pairs)))))
 
 (defn valid-values-for [board coord]
-  nil)
+  (if (not= 0 (value-at board coord))
+    #{}
+    (apply set/difference (cons all-values
+                                (map #(% board coord)
+                                     [row-values col-values block-values])))))
 
 (defn filled? [board]
-  nil)
+  (every? #(not (some #{0} %)) board))
 
 (defn rows [board]
-  nil)
+  (map set board))
 
 (defn valid-rows? [board]
-  nil)
+  (every? #(= all-values %) (rows board)))
 
 (defn cols [board]
-  nil)
+  (map #(col-values board [0 %]) (range 0 9)))
 
 (defn valid-cols? [board]
-  nil)
+  (every? #(= all-values %) (cols board)))
 
 (defn blocks [board]
-  nil)
+  (->> (coord-pairs [0 1 2])
+       (map #(map (partial * 3) %))
+       (map #(block-values board %))))
 
 (defn valid-blocks? [board]
-  nil)
+  (every? #(= all-values %) (blocks board)))
 
 (defn valid-solution? [board]
-  nil)
+  (every? #(% board) [valid-rows? valid-cols? valid-blocks?]))
 
 (defn set-value-at [board coord new-value]
-  nil)
+  (assoc-in board coord new-value))
 
 (defn find-empty-point [board]
-  nil)
+  (loop [row 0, col 0]
+    (cond
+      (> row 8) nil
+      (> col 8) (recur (inc row) 0)
+      (= 0 (get-in board [row col])) [row col]
+      :else (recur row (inc col)))))
 
 (defn solve [board]
-  nil)
+  (letfn [(aux [board]
+            (if (filled? board)
+              (if (valid-solution? board)
+                [board]
+                [])
+              (let [slot (find-empty-point board)]
+                (for [n (valid-values-for board slot)
+                         :let [new-board (set-value-at board slot n)]
+                         solution (aux new-board)]
+                      solution))))]
+    (first (aux board))))
