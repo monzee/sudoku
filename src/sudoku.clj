@@ -73,7 +73,24 @@
       (= 0 (get-in board [row col])) [row col]
       :else (recur row (inc col)))))
 
+(declare search)
 (defn solve [board]
+  (cond
+    (not (filled? board)) (let [slot (find-empty-point board)
+                                xs   (valid-values-for board slot)]
+                            (search (map #(set-value-at board slot %) xs)))
+    (valid-solution? board) board
+    :else []))
+
+(defn- search [[b & bs :as boards]]
+  (if (empty? boards)
+    []
+    (let [solution (solve b)]
+      (if (empty? solution)
+        (recur bs)
+        solution))))
+
+(comment defn solve [board]
   (letfn [(aux [board]
             (if (filled? board)
               (if (valid-solution? board)
@@ -81,7 +98,7 @@
                 [])
               (let [slot (find-empty-point board)]
                 (for [n (valid-values-for board slot)
-                         :let [new-board (set-value-at board slot n)]
-                         solution (aux new-board)]
-                      solution))))]
+                      :let [new-board (set-value-at board slot n)]
+                      solution (aux new-board)]
+                  solution))))]
     (first (aux board))))
